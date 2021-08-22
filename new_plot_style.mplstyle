@@ -1,0 +1,16 @@
+axes.grid : True
+grid.linestyle : --
+axes.facecolor : EDEAD6
+lines.linewidth : 3
+font.family : Work Sans
+font.style : normal
+font.weight : 450
+font.size : 14
+axes.edgecolor : (0.0, 0.0, 0.0)
+text.color : (0.0, 0.0, 0.0)
+axes.labelcolor : (0, 0, 0)
+xtick.color : (0, 0, 0)
+ytick.color : (0, 0, 0)
+#axes.prop_cycle : cycler('color', ['201166','890065','ca3150','e87736','e5bf35'])
+axes.prop_cycle : cycler('color', ['4477AA','EE6677','228833','ccbb44','66ccee','aa3377','bbbbbb'])
+#axes.prop_cycle : cycler('color', ['cc6677','332288','ddcc77','117733','88ccee','882255','44aa99', '999933', 'aa4499'])
