@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from scipy import signal
+import matplotlib.pyplot as plt
 
 def IAF(current_sig, dt, rate_crtl):
     if rate_crtl:
@@ -52,3 +53,25 @@ def SimSignal(voltage_sig, time_step, bpfs, FWR_model):
         pulse_trains.append(pulse_train)
 
     return pulse_trains, time_series
+
+def EDM(pulse_train, alpha):
+    y = np.zeros(len(pulse_train))
+    y_prior = 0
+    lamb = 1/(np.power(2, alpha))
+    for index, x in enumerate(pulse_train):
+        y[index] = y_prior - lamb*(y_prior - x)
+        y_prior = y[index]
+    
+    return y
+
+def VizPulseTrainDensity(data):
+    fig,ax = plt.subplots(figsize=[10,5])
+    im = ax.imshow(data,aspect='auto',interpolation='none',vmin=0,cmap="bone")
+    ax.spines[:].set_visible(False)
+    #ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
+    ax.grid(False)
+    ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
+    ax.grid(which="minor", color="w", linestyle='-', linewidth=1)
+    ax.tick_params(which="minor", bottom=False, left=False)
+    ax.set_ylabel("Feature Vector")
+    return fig, ax
