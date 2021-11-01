@@ -3,6 +3,8 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from scipy import signal
 import matplotlib.pyplot as plt
+import multiprocessing as mp
+import threading 
 
 def IAF(current_sig, dt, rate_crtl):
     if rate_crtl:
@@ -30,6 +32,11 @@ def FWR(voltage_sig, model):
     current_sig = model.predict(X)
     return current_sig*1e-9
 
+def FWR_IAR(voltage_signal, model, dt, rate_crtl, pulse_train):
+    current_sig = FWR(voltage_sig=voltage_signal,model=model)
+    _,pulse_train[0] = IAF(current_sig=current_sig,dt=dt,rate_crtl=rate_crtl)
+    return pulse_train
+
 def BPF(voltage_sig, time_series, bpfs):
     filtered_sigs = [] 
     for tf in bpfs:
@@ -39,19 +46,59 @@ def BPF(voltage_sig, time_series, bpfs):
     
     return filtered_sigs 
 
-def SimSignal(voltage_sig, time_step, bpfs, FWR_model):
+def SimSignal(voltage_sig, time_step, bpfs, FWR_model, rate_ctrl):
     endtime = len(voltage_sig)*time_step
     time_series = np.linspace(0,endtime,int(endtime/time_step))
 
     filtered_sigs = BPF(voltage_sig=voltage_sig, time_series=time_series,bpfs=bpfs)
 
-    pulse_trains = []
+    pulse_train_0 = [None] * 1
+    pulse_train_1 = [None] * 1
+    pulse_train_2 = [None] * 1
+    pulse_train_3 = [None] * 1
+    pulse_train_4 = [None] * 1
+    pulse_train_5 = [None] * 1
+    pulse_train_6 = [None] * 1
+    pulse_train_7 = [None] * 1
+    t0 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[0], FWR_model, time_step, rate_ctrl,pulse_train_0))
+    t1 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[1], FWR_model, time_step, rate_ctrl,pulse_train_1))
+    t2 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[2], FWR_model, time_step, rate_ctrl,pulse_train_2))
+    t3 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[3], FWR_model, time_step, rate_ctrl,pulse_train_3))
+    t4 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[4], FWR_model, time_step, rate_ctrl,pulse_train_4))
+    t5 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[5], FWR_model, time_step, rate_ctrl,pulse_train_5))
+    t6 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[6], FWR_model, time_step, rate_ctrl,pulse_train_6))
+    t7 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[7], FWR_model, time_step, rate_ctrl,pulse_train_7))
+    
 
-    for filtered_sig in filtered_sigs:
-        fwr_sig = FWR(voltage_sig=filtered_sig, model=FWR_model)
-        pulse_train,_ = IAF(current_sig=fwr_sig, dt=time_step, rate_crtl=0)
-        pulse_trains.append(pulse_train)
+    t0.start()
+    t1.start()
+    t2.start()
+    t3.start()
+    t4.start()
+    t5.start()
+    t6.start()
+    t7.start()
 
+    t0.join()
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+    t5.join()
+    t6.join()
+    t7.join()
+
+    #pool = mp.Pool(mp.cpu_count())
+
+    #pulse_trains = [pool.apply(FWR_IAR, args=(filtered_sig, FWR_model, time_step, rate_ctrl)) for filtered_sig in filtered_sigs]
+    
+    #pool.close()
+    
+    #for filtered_sig in filtered_sigs:
+    #    fwr_sig = FWR(voltage_sig=filtered_sig, model=FWR_model)
+    #    pulse_train,_ = IAF(current_sig=fwr_sig, dt=time_step, rate_crtl=1)
+    #    pulse_trains.append(pulse_train)
+    pulse_trains = [pulse_train_0,pulse_train_1, pulse_train_2, pulse_train_3, pulse_train_4, pulse_train_5, pulse_train_6, pulse_train_7]
     return pulse_trains, time_series
 
 def EDM(pulse_train, alpha):
