@@ -34,7 +34,7 @@ def FWR(voltage_sig, model):
 
 def FWR_IAR(voltage_signal, model, dt, rate_crtl, pulse_train):
     current_sig = FWR(voltage_sig=voltage_signal,model=model)
-    _,pulse_train[0] = IAF(current_sig=current_sig,dt=dt,rate_crtl=rate_crtl)
+    pulse_train[0],_ = IAF(current_sig=current_sig,dt=dt,rate_crtl=rate_crtl)
     return pulse_train
 
 def BPF(voltage_sig, time_series, bpfs):
