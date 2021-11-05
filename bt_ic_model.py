@@ -12,29 +12,61 @@ def IAF(current_sig, dt, rate_crtl):
     else:
         c = 250e-15
 
-    Vx = np.zeros(len(current_sig))
+    #Vx = np.zeros(len(current_sig))
+    Vx = 0
+    Vx_prior = 0
     pulse_train = np.zeros(len(current_sig))
 
     for index in range(len(current_sig)):
         if index == 0:
            pass
         else:
-            Vx[index] = Vx[index - 1] + (1/c)*dt*current_sig[index]
+            Vx = Vx_prior + (1/c)*dt*current_sig[index]
 
-            if Vx[index] > 0.6:
-                Vx[index] = 0
+            if Vx > 0.6:
+                Vx_prior = 0
                 pulse_train[index] = 1
+            else:
+                Vx_prior = Vx
     
-    return pulse_train,Vx
+    return pulse_train
+
+def IAF_interpolate(current_sig, dt, dt_pulses, rate_crtl):
+    if rate_crtl:
+        c = 500e-15
+    else:
+        c = 250e-15
+
+    Vx = 0
+    Vx_prior = 0
+    scale_rate = int(dt/dt_pulses)
+    pulse_train = np.zeros(len(current_sig)*scale_rate)
+
+    for index in range(len(current_sig)):
+        if index == 0:
+           pass
+        else:
+            Vx = Vx_prior + (1/c)*dt*current_sig[index]
+
+            if Vx > 0.6:
+                num_pulses = np.floor(Vx/0.6)
+                Vx_prior = Vx - num_pulses*0.6
+                pulse_index = np.floor(250/num_pulses)
+                for j in range(int(num_pulses)):
+                    pulse_train[int(index*250+(pulse_index *j))] = 1
+            else:
+                Vx_prior = Vx
+    
+    return pulse_train
 
 def FWR(voltage_sig, model):
     X = np.array(voltage_sig).reshape(-1,1)
     current_sig = model.predict(X)
     return current_sig*1e-9
 
-def FWR_IAR(voltage_signal, model, dt, rate_crtl, pulse_train):
+def FWR_IAR(voltage_signal, model, dt, dt_pulses, rate_crtl, pulse_train):
     current_sig = FWR(voltage_sig=voltage_signal,model=model)
-    pulse_train[0],_ = IAF(current_sig=current_sig,dt=dt,rate_crtl=rate_crtl)
+    pulse_train[0] = IAF_interpolate(current_sig=current_sig,dt=dt,dt_pulses=dt_pulses,rate_crtl=rate_crtl)
     return pulse_train
 
 def BPF(voltage_sig, time_series, bpfs):
@@ -46,7 +78,7 @@ def BPF(voltage_sig, time_series, bpfs):
     
     return filtered_sigs 
 
-def SimSignal(voltage_sig, time_step, bpfs, FWR_model, rate_ctrl):
+def SimSignal(voltage_sig, time_step, time_step_pulse, bpfs, FWR_model, rate_ctrl):
     endtime = len(voltage_sig)*time_step
     time_series = np.linspace(0,endtime,int(endtime/time_step))
 
@@ -60,14 +92,14 @@ def SimSignal(voltage_sig, time_step, bpfs, FWR_model, rate_ctrl):
     pulse_train_5 = [None] * 1
     pulse_train_6 = [None] * 1
     pulse_train_7 = [None] * 1
-    t0 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[0], FWR_model, time_step, rate_ctrl,pulse_train_0))
-    t1 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[1], FWR_model, time_step, rate_ctrl,pulse_train_1))
-    t2 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[2], FWR_model, time_step, rate_ctrl,pulse_train_2))
-    t3 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[3], FWR_model, time_step, rate_ctrl,pulse_train_3))
-    t4 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[4], FWR_model, time_step, rate_ctrl,pulse_train_4))
-    t5 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[5], FWR_model, time_step, rate_ctrl,pulse_train_5))
-    t6 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[6], FWR_model, time_step, rate_ctrl,pulse_train_6))
-    t7 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[7], FWR_model, time_step, rate_ctrl,pulse_train_7))
+    t0 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[0], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_0))
+    t1 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[1], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_1))
+    t2 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[2], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_2))
+    t3 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[3], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_3))
+    t4 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[4], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_4))
+    t5 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[5], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_5))
+    t6 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[6], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_6))
+    t7 = threading.Thread(target=FWR_IAR, args=(filtered_sigs[7], FWR_model, time_step, time_step_pulse, rate_ctrl,pulse_train_7))
     
 
     t0.start()
